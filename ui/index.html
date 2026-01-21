@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tauri + Plotly</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <div id="plot" style="width:100%; height:600px;"></div>
+
+  <script type="module">
+    // Assume you already have your data and layout
+    const data = [
+      {
+        x: [1, 2, 3, 4, 5, 6, 7],
+        y: [10, 15, 13, 17, 14, 19, 22],
+        mode: 'markers+lines',
+        type: 'scatter',
+        marker: { size: 10 }
+      }
+    ];
+
+    const layout = {
+      dragmode: 'select',           // or 'lasso' — controls default drag behavior
+      selectdirection: 'h',         // optional: 'h' = horizontal only, 'v', 'd' (diagonal)
+      xaxis: { title: 'Time (s)' },
+      yaxis: { title: 'Value' }
+    };
+
+    const plotDiv = document.getElementById('plot');
+
+    Plotly.newPlot(plotDiv, data, layout, { responsive: true });
+
+    // ────────────────────────────────────────────────
+    // Listen to box/lasso selection
+    // ────────────────────────────────────────────────
+    plotDiv.on('plotly_selected', (eventData) => {
+      if (!eventData || !eventData.points || eventData.points.length === 0) {
+        console.log("Nothing selected");
+        return;
+      }
+
+      // Option A: Get min/max x of the selected region (most common need)
+      const xValues = eventData.points.map(p => p.x);
+      const minX = Math.min(...xValues);
+      const maxX = Math.max(...xValues);
+
+      console.log("Selected x-range:", minX, "–", maxX);
+
+      // Option B: Get ALL selected points (if you need individual values)
+      const selectedPoints = eventData.points.map(p => ({
+        x: p.x,
+        y: p.y,
+        pointIndex: p.pointIndex,
+        curveNumber: p.curveNumber   // which trace
+      }));
+
+      console.log("Selected points:", selectedPoints);
+
+      /*
+      // Send to Rust backend (Tauri)
+      window.__TAURI__.invoke('selection_made', {
+        min_x: minX,
+        max_x: maxX,
+        points: selectedPoints
+      }).catch(err => console.error("Tauri invoke failed:", err));
+      */
+    });
+  </script>
+</body>
+</html>
